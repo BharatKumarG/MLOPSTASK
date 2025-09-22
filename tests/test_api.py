@@ -147,6 +147,9 @@ class TestPredictionEndpoint:
         """Test prediction without JSON data"""
         response = client.post('/predict')
         assert response.status_code == 400
+        data = response.get_json()
+        assert 'error' in data
+        assert 'JSON' in data['error']
 
     def test_prediction_no_model(self, client):
         """Test prediction when model is not loaded"""

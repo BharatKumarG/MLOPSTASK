@@ -4,7 +4,7 @@ import os
 import json
 import time
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Flask, request, jsonify
 import numpy as np
 import pandas as pd
@@ -190,7 +190,7 @@ def health_check():
     try:
         status = {
             "status": "healthy",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "model_loaded": model is not None,
             "model_info": model_info,
             "version": "1.0.0"
@@ -207,7 +207,7 @@ def health_check():
         return jsonify({
             "status": "error",
             "error": str(e),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }), 500
 
 @app.route('/predict', methods=['POST'])
@@ -222,10 +222,13 @@ def predict():
             }), 503
         
         # Get request data
-        data = request.get_json()
+        data = request.get_json(force=True, silent=True)
         
         if not data:
-            return jsonify({"error": "No JSON data provided"}), 400
+            return jsonify({
+                "error": "No JSON data provided or invalid JSON format",
+                "message": "Please provide valid JSON with 'features' field"
+            }), 400
         
         # Validate input format
         if 'features' not in data:
@@ -341,7 +344,7 @@ def reload_model():
     except Exception as e:
         return jsonify({
             "error": str(e),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }), 500
 
 @app.errorhandler(404)
