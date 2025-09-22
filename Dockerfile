@@ -26,11 +26,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY app.py .
 COPY train_model.py .
 
-# Copy model files if they exist (optional)
-COPY best_model.pkl* ./
-COPY model.pkl* ./
-COPY *.csv* ./
-COPY *.json* ./
+# Train model to ensure we have model files
+RUN python train_model.py
 
 # Create a non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser

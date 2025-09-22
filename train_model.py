@@ -29,18 +29,30 @@ def setup_mlflow():
     if not MLFLOW_AVAILABLE:
         return None
         
-    # Set MLflow tracking URI (can be changed to remote server)
-    mlflow.set_tracking_uri("file:./mlruns")
-    
-    # Set or create experiment
-    experiment_name = "iris-classification"
     try:
-        experiment_id = mlflow.create_experiment(experiment_name)
-    except mlflow.exceptions.MlflowException:
-        experiment_id = mlflow.get_experiment_by_name(experiment_name).experiment_id
-    
-    mlflow.set_experiment(experiment_name)
-    return experiment_id
+        # Set MLflow tracking URI using relative path
+        # This works better in CI/CD environments
+        mlflow.set_tracking_uri("./mlruns")
+        
+        # Ensure the mlruns directory exists
+        os.makedirs("./mlruns", exist_ok=True)
+        
+        # Set or create experiment
+        experiment_name = "iris-classification"
+        try:
+            experiment_id = mlflow.create_experiment(experiment_name)
+        except mlflow.exceptions.MlflowException:
+            experiment = mlflow.get_experiment_by_name(experiment_name)
+            experiment_id = experiment.experiment_id if experiment else None
+        
+        mlflow.set_experiment(experiment_name)
+        return experiment_id
+        
+    except Exception as e:
+        print(f"Warning: MLflow setup failed: {e}")
+        print("Continuing without MLflow logging...")
+        return None
+
 
 def load_and_prepare_data():
     """Load and prepare the Iris dataset"""
@@ -86,14 +98,17 @@ def log_model_artifacts(model, X_test, y_test, y_pred, accuracy, feature_names, 
     """Log model and artifacts to MLflow"""
     
     if MLFLOW_AVAILABLE:
-        # Log model
-        mlflow.sklearn.log_model(
-            sk_model=model,
-            artifact_path="model",
-            registered_model_name="iris-classifier",
-            input_example=X_test.iloc[:5],
-            signature=mlflow.models.infer_signature(X_test, y_pred)
-        )
+        try:
+            # Log model
+            mlflow.sklearn.log_model(
+                sk_model=model,
+                artifact_path="model",
+                registered_model_name="iris-classifier",
+                input_example=X_test.iloc[:5],
+                signature=mlflow.models.infer_signature(X_test, y_pred)
+            )
+        except Exception as e:
+            print(f"Warning: Failed to log model to MLflow: {e}")
     
     # Always save model locally
     with open('model.pkl', 'wb') as f:
@@ -107,7 +122,10 @@ def log_model_artifacts(model, X_test, y_test, y_pred, accuracy, feature_names, 
     
     feature_importance.to_csv('feature_importance.csv', index=False)
     if MLFLOW_AVAILABLE:
-        mlflow.log_artifact('feature_importance.csv')
+        try:
+            mlflow.log_artifact('feature_importance.csv')
+        except Exception as e:
+            print(f"Warning: Failed to log feature importance to MLflow: {e}")
     
     # Log classification report
     from sklearn.metrics import classification_report
@@ -117,7 +135,10 @@ def log_model_artifacts(model, X_test, y_test, y_pred, accuracy, feature_names, 
     with open('classification_report.json', 'w') as f:
         json.dump(report, f, indent=2)
     if MLFLOW_AVAILABLE:
-        mlflow.log_artifact('classification_report.json')
+        try:
+            mlflow.log_artifact('classification_report.json')
+        except Exception as e:
+            print(f"Warning: Failed to log classification report to MLflow: {e}")
     
     # Log confusion matrix
     from sklearn.metrics import confusion_matrix
@@ -125,7 +146,10 @@ def log_model_artifacts(model, X_test, y_test, y_pred, accuracy, feature_names, 
     cm_df = pd.DataFrame(cm, index=target_names, columns=target_names)
     cm_df.to_csv('confusion_matrix.csv')
     if MLFLOW_AVAILABLE:
-        mlflow.log_artifact('confusion_matrix.csv')
+        try:
+            mlflow.log_artifact('confusion_matrix.csv')
+        except Exception as e:
+            print(f"Warning: Failed to log confusion matrix to MLflow: {e}")
     
     print(f"Model logged with accuracy: {accuracy:.4f}")
     print("Feature Importance:")
@@ -171,7 +195,10 @@ def main():
     
     # Train models with different hyperparameters
     for i, hyperparams in enumerate(hyperparams_list):
-        if MLFLOW_AVAILABLE:
+        # Check if MLflow is available and setup was successful
+        mlflow_enabled = MLFLOW_AVAILABLE and experiment_id is not None
+        
+        if mlflow_enabled:
             with mlflow.start_run(run_name=f"iris-rf-run-{i+1}") as run:
                 print(f"\nTraining model {i+1}/3 with hyperparams: {hyperparams}")
                 
@@ -223,12 +250,20 @@ def main():
     print(f"\nTraining completed!")
     print(f"Best model accuracy: {best_accuracy:.4f}")
     print(f"Best run ID: {best_run_id}")
-    if MLFLOW_AVAILABLE:
+    
+    # Check if MLflow was successfully enabled
+    mlflow_enabled = MLFLOW_AVAILABLE and experiment_id is not None
+    
+    if mlflow_enabled:
         print(f"MLflow UI: mlflow ui")
         print(f"Models logged to: ./mlruns")
     else:
         print(f"Best model saved to: best_model.pkl")
         print(f"Model artifacts saved locally")
+        if not MLFLOW_AVAILABLE:
+            print(f"Note: MLflow not available")
+        else:
+            print(f"Note: MLflow logging disabled due to permission issues")
     
     # Clean up temporary files
     import os

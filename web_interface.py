@@ -15,6 +15,17 @@ import os
 # Create Flask app for web interface
 web_app = Flask(__name__, template_folder='templates', static_folder='static')
 
+# Add custom Jinja2 filters
+from datetime import datetime
+
+def strftime_filter(timestamp, format='%Y-%m-%d %H:%M:%S'):
+    """Custom strftime filter for Jinja2 templates"""
+    if isinstance(timestamp, str):
+        return timestamp
+    return timestamp.strftime(format)
+
+web_app.jinja_env.filters['strftime'] = strftime_filter
+
 # Configuration
 API_BASE_URL = "http://localhost:5000"
 SAMPLE_PREDICTIONS = [
@@ -265,7 +276,8 @@ def dashboard():
     return render_template('dashboard.html', 
                          api_status=api_status, 
                          test_results=test_results,
-                         sample_predictions=SAMPLE_PREDICTIONS)
+                         sample_predictions=SAMPLE_PREDICTIONS,
+                         datetime=datetime)
 
 @web_app.route('/run_tests')
 def run_tests():
