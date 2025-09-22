@@ -1,0 +1,10 @@
+artifact_location: file:///C:/Users/bhara/Downloads/Compressed/New folder/mlruns/798335503437449270/models/m-b9765b68fd204c988bd22617a9749333/artifacts
+creation_timestamp: 1758524924421
+experiment_id: '798335503437449270'
+last_updated_timestamp: 1758524931264
+model_id: m-b9765b68fd204c988bd22617a9749333
+model_type: null
+name: model
+source_run_id: f2a54d1435474d86b854e2214deaa51a
+status: 2
+status_message: null

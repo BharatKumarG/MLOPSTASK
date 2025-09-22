@@ -1,0 +1,54 @@
+groups:
+  - name: ml_inference_rules
+    rules:
+      # Request rate per second
+      - record: ml_api:request_rate
+        expr: rate(api_requests_total[5m])
+      
+      # Average prediction latency
+      - record: ml_api:prediction_latency_avg
+        expr: rate(api_request_duration_seconds_sum[5m]) / rate(api_request_duration_seconds_count[5m])
+      
+      # 95th percentile latency
+      - record: ml_api:prediction_latency_p95
+        expr: histogram_quantile(0.95, rate(api_request_duration_seconds_bucket[5m]))
+      
+      # Error rate
+      - record: ml_api:error_rate
+        expr: rate(api_requests_total{status=~"4.."}[5m]) / rate(api_requests_total[5m])
+      
+      # Prediction success rate
+      - record: ml_api:prediction_success_rate
+        expr: rate(predictions_total[5m]) / rate(api_requests_total{endpoint="/predict"}[5m])
+
+  - name: ml_inference_alerts
+    rules:
+      # High error rate alert
+      - alert: HighErrorRate
+        expr: ml_api:error_rate > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for 5 minutes"
+      
+      # High latency alert
+      - alert: HighLatency
+        expr: ml_api:prediction_latency_p95 > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High prediction latency detected"
+          description: "95th percentile latency is {{ $value }}s"
+      
+      # Low prediction success rate
+      - alert: LowPredictionSuccessRate
+        expr: ml_api:prediction_success_rate < 0.9
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low prediction success rate"
+          description: "Prediction success rate is {{ $value | humanizePercentage }}"
