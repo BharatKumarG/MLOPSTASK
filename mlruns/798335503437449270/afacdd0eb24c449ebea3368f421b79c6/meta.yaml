@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/bhara/Downloads/Compressed/New folder/mlruns/798335503437449270/afacdd0eb24c449ebea3368f421b79c6/artifacts
+end_time: 1758528575777
+entry_point_name: ''
+experiment_id: '798335503437449270'
+lifecycle_stage: active
+run_id: afacdd0eb24c449ebea3368f421b79c6
+run_name: iris-rf-run-3
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1758528571846
+status: 3
+tags: []
+user_id: bhara

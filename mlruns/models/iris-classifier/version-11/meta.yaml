@@ -1,0 +1,18 @@
+aliases: []
+creation_timestamp: 1758528571668
+current_stage: None
+deployment_job_state: null
+description: null
+last_updated_timestamp: 1758528571668
+metrics: null
+model_id: m-8ac8d5a7beca448f9171c78fe75322f1
+name: iris-classifier
+params: null
+run_id: 36337d30e0ed45d59a4da1df59cb7ad0
+run_link: null
+source: models:/m-8ac8d5a7beca448f9171c78fe75322f1
+status: READY
+status_message: null
+storage_location: file:///C:/Users/bhara/Downloads/Compressed/New folder/mlruns/798335503437449270/models/m-8ac8d5a7beca448f9171c78fe75322f1/artifacts
+user_id: null
+version: 11
