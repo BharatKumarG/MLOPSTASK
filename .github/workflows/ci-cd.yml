@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9, 3.10, 3.11, 3.12]
+        python-version: ['3.9', '3.10', '3.11', '3.12']
     
     steps:
     - uses: actions/checkout@v4
@@ -37,16 +37,27 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        pip install wheel setuptools
         pip install -r requirements.txt
         pip install pytest-cov
+    
+    - name: Verify installation
+      run: |
+        python --version
+        pip --version
+        python -c "import sklearn, pandas, numpy, flask; print('All major dependencies imported successfully')"
+        python -c "import mlflow; print('MLflow available')" || echo "MLflow not available (expected in CI)"
+        python -c "import prometheus_client; print('Prometheus client available')" || echo "Prometheus client not available (expected in CI)"
     
     - name: Lint with flake8
       run: |
         pip install flake8
+        echo "Running flake8 syntax checks..."
         # Stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=mlruns,__pycache__,.git
+        echo "Running flake8 style checks (warnings only)..."
         # Exit-zero treats all errors as warnings
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=mlruns,__pycache__,.git
     
     - name: Train model for testing
       run: |
@@ -70,7 +81,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: 3.12
+        python-version: '3.12'
     
     - name: Install security tools
       run: |
@@ -97,6 +108,11 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -201,7 +217,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: 3.12
+        python-version: '3.12'
     
     - name: Install dependencies
       run: |
