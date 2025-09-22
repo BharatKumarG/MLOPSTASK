@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Inference API Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.healthy {
+            background: #28a745;
+        }
+        
+        .status-dot.unhealthy {
+            background: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-2px);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .card h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 1.3em;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+        
+        .status-passed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-running {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-info {
+            background: #cce7ff;
+            color: #004085;
+        }
+        
+        .test-interactive {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .feature-inputs {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .prediction-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            background: #f8f9fa;
+        }
+        
+        .probability-bar {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        
+        .probability-label {
+            width: 100px;
+            font-size: 14px;
+        }
+        
+        .probability-visual {
+            flex: 1;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            margin: 0 10px;
+            overflow: hidden;
+        }
+        
+        .probability-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .probability-fill.setosa { background: #28a745; }
+        .probability-fill.versicolor { background: #ffc107; }
+        .probability-fill.virginica { background: #dc3545; }
+        
+        .probability-value {
+            font-weight: 600;
+            min-width: 50px;
+        }
+        
+        .sample-predictions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .sample-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .sample-card:hover {
+            border-color: #007bff;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.2);
+        }
+        
+        .sample-card h4 {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        
+        .sample-features {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .sample-expected {
+            font-weight: 600;
+            color: #28a745;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .metrics-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 8px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .action-buttons {
+                justify-content: center;
+            }
+            
+            .feature-inputs {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🤖 ML Inference API Dashboard</h1>
+            <p>Iris Classification Service Monitor & Testing Interface</p>
+        </div>
+        
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot {{ 'healthy' if api_status.healthy else 'unhealthy' }}"></div>
+                <span><strong>API Status:</strong> {{ 'Healthy' if api_status.healthy else 'Unhealthy' }}</span>
+                {% if api_status.last_check %}
+                    <span style="color: #6c757d; margin-left: 10px;">
+                        Last checked: {{ api_status.last_check.strftime('%H:%M:%S') }}
+                    </span>
+                {% endif %}
+            </div>
+            
+            <div>
+                {% if api_status.healthy %}
+                    <span><strong>Model:</strong> {{ api_status.get('model_loaded', 'Unknown') }}</span>
+                    <span style="margin-left: 20px;"><strong>Version:</strong> {{ api_status.get('version', 'Unknown') }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <a href="/run_tests" class="btn btn-primary">
+                    🧪 Run Comprehensive Tests
+                </a>
+                <button onclick="refreshStatus()" class="btn btn-success">
+                    🔄 Refresh Status
+                </button>
+                <button onclick="toggleInteractiveTest()" class="btn btn-primary" id="toggleTestBtn">
+                    🎯 Interactive Testing
+                </button>
+            </div>
+            
+            <!-- Interactive Testing Panel -->
+            <div id="interactiveTest" class="test-interactive" style="display: none;">
+                <h3>🎯 Interactive Iris Classification Test</h3>
+                <p>Enter iris measurements to get real-time predictions from the ML model:</p>
+                
+                <div class="feature-inputs">
+                    <div class="form-group">
+                        <label>Sepal Length (cm)</label>
+                        <input type="number" class="form-control" id="sepalLength" step="0.1" placeholder="5.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Sepal Width (cm)</label>
+                        <input type="number" class="form-control" id="sepalWidth" step="0.1" placeholder="3.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Petal Length (cm)</label>
+                        <input type="number" class="form-control" id="petalLength" step="0.1" placeholder="1.4">
+                    </div>
+                    <div class="form-group">
+                        <label>Petal Width (cm)</label>
+                        <input type="number" class="form-control" id="petalWidth" step="0.1" placeholder="0.2">
+                    </div>
+                </div>
+                
+                <button onclick="makePrediction()" class="btn btn-primary">🔮 Predict Species</button>
+                
+                <div id="predictionResult" class="prediction-result" style="display: none;">
+                    <!-- Prediction results will be inserted here -->
+                </div>
+                
+                <!-- Sample Predictions -->
+                <h4 style="margin-top: 30px; margin-bottom: 15px;">📋 Quick Test Samples</h4>
+                <div class="sample-predictions">
+                    {% for sample in sample_predictions %}
+                    <div class="sample-card" onclick="loadSample({{ sample.features }})">
+                        <h4>{{ sample.description }}</h4>
+                        <div class="sample-features">
+                            Features: [{{ sample.features|join(', ') }}]
+                        </div>
+                        <div class="sample-expected">Expected: {{ sample.expected }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Test Results Grid -->
+            {% if test_results %}
+            <div class="grid">
+                <!-- Health Check -->
+                <div class="card">
+                    <h3>❤️ Health Check</h3>
+                    <div class="status-badge status-{{ test_results.health.status }}">
+                        {{ test_results.health.status }}
+                    </div>
+                    {% if test_results.health.details %}
+                        <p><strong>Status:</strong> {{ test_results.health.details.get('status', 'Unknown') }}</p>
+                        <p><strong>Model Loaded:</strong> {{ test_results.health.details.get('model_loaded', 'Unknown') }}</p>
+                        <p><strong>Version:</strong> {{ test_results.health.details.get('version', 'Unknown') }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Model Info -->
+                <div class="card">
+                    <h3>🧠 Model Information</h3>
+                    <div class="status-badge status-{{ test_results.model_info.status }}">
+                        {{ test_results.model_info.status }}
+                    </div>
+                    {% if test_results.model_info.details %}
+                        <p><strong>Type:</strong> {{ test_results.model_info.details.get('model_type', 'Unknown') }}</p>
+                        <p><strong>Features:</strong> {{ test_results.model_info.details.get('feature_names', [])|length }} inputs</p>
+                        <p><strong>Classes:</strong> {{ test_results.model_info.details.get('target_names', [])|length }} species</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Predictions -->
+                <div class="card">
+                    <h3>🎯 Prediction Accuracy</h3>
+                    <div class="status-badge status-{{ test_results.predictions.status }}">
+                        {{ test_results.predictions.status }}
+                    </div>
+                    {% if test_results.predictions.details %}
+                        <p><strong>Accuracy:</strong> {{ "%.1f"|format(test_results.predictions.details.accuracy * 100) }}%</p>
+                        <p><strong>Correct:</strong> {{ test_results.predictions.details.correct }}/{{ test_results.predictions.details.total }}</p>
+                        <div style="margin-top: 15px;">
+                            {% for pred in test_results.predictions.details.predictions %}
+                                <div style="margin-bottom: 8px; padding: 8px; background: {{ '#d4edda' if pred.correct else '#f8d7da' }}; border-radius: 4px; font-size: 12px;">
+                                    <strong>{{ pred.description }}:</strong> {{ pred.predicted }} 
+                                    ({{ "%.2f"|format(pred.confidence) }}) 
+                                    {{ '✅' if pred.correct else '❌' }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Error Handling -->
+                <div class="card">
+                    <h3>🛡️ Error Handling</h3>
+                    <div class="status-badge status-{{ test_results.error_handling.status }}">
+                        {{ test_results.error_handling.status }}
+                    </div>
+                    {% if test_results.error_handling.details %}
+                        {% for test in test_results.error_handling.details.tests %}
+                            <div style="margin-bottom: 8px; padding: 8px; background: {{ '#d4edda' if test.passed else '#f8d7da' }}; border-radius: 4px; font-size: 12px;">
+                                <strong>{{ test.name }}:</strong> {{ '✅ Passed' if test.passed else '❌ Failed' }}
+                                {% if test.error_message %}
+                                    <br><em>{{ test.error_message }}</em>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <!-- Performance -->
+                <div class="card">
+                    <h3>⚡ Performance</h3>
+                    <div class="status-badge status-{{ test_results.performance.status }}">
+                        {{ test_results.performance.status }}
+                    </div>
+                    {% if test_results.performance.details %}
+                        <p><strong>Success Rate:</strong> {{ test_results.performance.details.successful_requests }}/{{ test_results.performance.details.total_requests }}</p>
+                        <p><strong>Avg Response:</strong> {{ "%.1f"|format(test_results.performance.details.avg_response_time) }}ms</p>
+                        <p><strong>Requests/sec:</strong> {{ "%.1f"|format(test_results.performance.details.requests_per_second) }}</p>
+                        <p><strong>Total Time:</strong> {{ "%.2f"|format(test_results.performance.details.total_time) }}s</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Metrics -->
+                <div class="card">
+                    <h3>📊 Metrics</h3>
+                    <div class="status-badge status-{{ test_results.metrics.status }}">
+                        {{ test_results.metrics.status }}
+                    </div>
+                    {% if test_results.metrics.details %}
+                        {% if test_results.metrics.details.get('total_metrics') %}
+                            <p><strong>Available Metrics:</strong> {{ test_results.metrics.details.total_metrics }}</p>
+                            <div class="metrics-list">
+                                {% for metric in test_results.metrics.details.sample_metrics[:10] %}
+                                    {% if metric.strip() and not metric.startswith('#') %}
+                                        <div>{{ metric }}</div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p>{{ test_results.metrics.details.message }}</p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Click "Run Comprehensive Tests" to see detailed results...</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>ML Inference API Dashboard | Built for Bharath Kumar | {{ "Now: %Y-%m-%d %H:%M:%S"|strftime }}</p>
+        </div>
+    </div>
+    
+    <script>
+        function refreshStatus() {
+            location.reload();
+        }
+        
+        function toggleInteractiveTest() {
+            const testPanel = document.getElementById('interactiveTest');
+            const toggleBtn = document.getElementById('toggleTestBtn');
+            
+            if (testPanel.style.display === 'none') {
+                testPanel.style.display = 'block';
+                toggleBtn.textContent = '🔼 Hide Interactive Testing';
+            } else {
+                testPanel.style.display = 'none';
+                toggleBtn.textContent = '🎯 Interactive Testing';
+            }
+        }
+        
+        function loadSample(features) {
+            document.getElementById('sepalLength').value = features[0];
+            document.getElementById('sepalWidth').value = features[1];
+            document.getElementById('petalLength').value = features[2];
+            document.getElementById('petalWidth').value = features[3];
+        }
+        
+        async function makePrediction() {
+            const features = [
+                parseFloat(document.getElementById('sepalLength').value),
+                parseFloat(document.getElementById('sepalWidth').value),
+                parseFloat(document.getElementById('petalLength').value),
+                parseFloat(document.getElementById('petalWidth').value)
+            ];
+            
+            // Validate inputs
+            if (features.some(isNaN)) {
+                alert('Please enter valid numbers for all features');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('predictionResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="spinner"></div><p>Making prediction...</p>';
+            
+            try {
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ features: features })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayPredictionResult(data);
+                } else {
+                    resultDiv.innerHTML = `<div style="color: #dc3545;"><strong>Error:</strong> ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div style="color: #dc3545;"><strong>Error:</strong> ${error.message}</div>`;
+            }
+        }
+        
+        function displayPredictionResult(data) {
+            const prediction = data.prediction;
+            const probabilities = data.probabilities;
+            
+            let html = `
+                <h4>🔮 Prediction Result</h4>
+                <div style="font-size: 18px; margin: 15px 0;">
+                    <strong>Predicted Species:</strong> 
+                    <span style="color: #28a745; font-weight: bold;">${prediction.class_name}</span>
+                    <span style="color: #6c757d; margin-left: 10px;">(${(prediction.confidence * 100).toFixed(1)}% confidence)</span>
+                </div>
+                
+                <h5>Class Probabilities:</h5>
+            `;
+            
+            for (const [species, probability] of Object.entries(probabilities)) {
+                const percentage = (probability * 100).toFixed(1);
+                html += `
+                    <div class="probability-bar">
+                        <div class="probability-label">${species}</div>
+                        <div class="probability-visual">
+                            <div class="probability-fill ${species}" style="width: ${percentage}%"></div>
+                        </div>
+                        <div class="probability-value">${percentage}%</div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('predictionResult').innerHTML = html;
+        }
+        
+        // Auto-refresh status every 30 seconds
+        setInterval(() => {
+            fetch('/api/health')
+                .then(response => response.json())
+                .then(data => {
+                    const statusDot = document.querySelector('.status-dot');
+                    const statusText = document.querySelector('.status-indicator span');
+                    
+                    if (data.healthy) {
+                        statusDot.className = 'status-dot healthy';
+                        statusText.innerHTML = '<strong>API Status:</strong> Healthy';
+                    } else {
+                        statusDot.className = 'status-dot unhealthy';
+                        statusText.innerHTML = '<strong>API Status:</strong> Unhealthy';
+                    }
+                })
+                .catch(console.error);
+        }, 30000);
+    </script>
+</body>
+</html>

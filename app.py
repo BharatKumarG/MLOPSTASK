@@ -184,6 +184,30 @@ def after_request(response):
         pass  # Don't let metrics collection break the response
     return response
 
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint with API information"""
+    return jsonify({
+        "message": "ML Inference API",
+        "version": "1.0.0",
+        "status": "running",
+        "model_loaded": model is not None,
+        "available_endpoints": {
+            "GET /health": "Health check",
+            "POST /predict": "Make predictions (requires JSON: {\"features\": [5.1, 3.5, 1.4, 0.2]})",
+            "GET /metrics": "Prometheus metrics",
+            "GET /model/info": "Model information",
+            "POST /model/reload": "Reload model"
+        },
+        "example_request": {
+            "url": "/predict",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "body": {"features": [5.1, 3.5, 1.4, 0.2]}
+        },
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }), 200
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -300,7 +324,7 @@ def predict():
         return jsonify({
             "error": "Internal server error",
             "message": str(e),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }), 500
 
 @app.route('/metrics', methods=['GET'])
@@ -322,7 +346,7 @@ def model_info_endpoint():
         "feature_names": feature_names,
         "target_names": target_names,
         "model_type": type(model).__name__,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }), 200
 
 @app.route('/model/reload', methods=['POST'])
@@ -334,12 +358,12 @@ def reload_model():
             return jsonify({
                 "message": "Model reloaded successfully",
                 "model_info": model_info,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }), 200
         else:
             return jsonify({
                 "error": "Failed to reload model",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }), 500
     except Exception as e:
         return jsonify({
